@@ -1,0 +1,293 @@
+---
+title: "gapminder"
+output: html_document
+---
+
+## Subsetting
+
+Data Subsetting:
+
+Given:
+
+```{r}
+x <- c(5.4, 6.2, 7.1, 4.8, 7.5)
+names(x) <- c('a', 'b', 'c', 'd', 'e')
+print(x)
+```
+
+Come up with commands to produce output without a and e.
+
+```{r}
+x[c(-1, -5)]
+x[2:4]
+x[c(2,3,4)]
+x[c("b", "c", "d")]
+```
+
+Write commands to return values greater than 4 and less than 7.
+
+```{r}
+x[x > 4 & x < 7]
+```
+
+Load the gapminder data set. The online hosted version is used, but the source file is saved in dataSources.
+
+```{r}
+gapminder <- read.csv("https://raw.githubusercontent.com/swcarpentry/r-novice-gapminder/main/episodes/data/gapminder_data.csv")
+```
+
+Create a list of countries in in Southeast Asia, and a list of all countries in the gapminder data.
+
+```{r}
+seAsia <- c("Myanmar", "Thailand", "Cambodia", "Vietnam", "Laos")
+countries <- unique(as.character(gapminder$country))
+```
+
+There are three theoretical ways to produce a logical vector to find all entries in Southeast Asia. Only two work.
+
+This causes issues where all output values are false, as none of the recycled value in seAsia line up properly with the countries list.
+
+```{r}
+countries[countries==seAsia]
+```
+
+A clunky way to solve this problem is to test each country with or testing.
+
+```{r}
+countries[countries=="Myanmar"|countries=="Thailand"|countries=="Cambodia"|countries=="Vietnam"|countries=="Laos"]
+```
+
+The clean way to solve this problem is using the %in% operator, which goes through each element on the left and checks against each of the right.
+
+```{r}
+countries[countries %in% seAsia]
+```
+
+When dealing with missing/undefined/infinite data, R has special functions. is.na returns all positions in vectors/matrix/DFs containing NA or NaN. is.nan does the same solely for NaN, and is.infinite does the same for Inf.
+
+is.finite returns all positions that do not contain NA, NaN, or Inf, and na.omit filters all missing values from a vector.
+
+Given:
+
+```{r}
+m <- matrix(1:18, nrow=3, ncol=6)
+print(m)
+```
+
+To extract 11 and 14, you can run:
+
+```{r}
+m[2,c(4,5)]
+```
+
+This works as matrix subsetting acts by row then column, leaving one blank returns all rows/columns respectively. If this is done, R returns a vector. Matrix output can be forced using drop = FALSE as a third argument.
+
+Given list:
+
+```{r}
+xlist <- list(a = "Software Carpentry", b = 1:10, data = head(mtcars))
+```
+
+To extract the number 2, you would do any of:
+
+```{r}
+xlist[[2]][2]
+xlist$b[2]
+xlist[["b"]][2]
+```
+
+To perform a linear ANOVA of population vs life expectancy from gapminder:
+
+```{r}
+mod <- aov(pop ~ lifeExp, data=gapminder)
+```
+
+The data above is hard to read, you can examine contents using attributes():
+
+```{r}
+attributes(mod)
+```
+
+Using this information, you can explore specific information. As an example, extraction of residual degrees of freedom (df.residual) is done by either:
+
+```{r}
+mod$df.residual
+mod[8]
+```
+
+The following are commonly mistaken.
+
+Extracting rows for a specific value uses == not =
+
+```{r}
+gapminder[gapminder$year == 1957,]
+```
+
+Extracting columns with exceptions cannot mix negative and positive indices
+
+```{r}
+gapminder[, -c(1:4)]
+gapminder[, -1:-4]
+```
+
+Extracting either rows or columns still requires a comma, just leave one empty
+
+```{r}
+gapminder[gapminder$lifeExp > 80,]
+```
+
+Extracting a specific set of columns/rows needs list formation, the first row and fourth and fifth columns would use:
+
+```{r}
+gapminder[1, c(4, 5)]
+```
+
+To extract rows that contain information by multiple logical operators you can use or (|) and and (&), however these require full logical assertions or use of the %in% operator.
+
+```{r}
+gapminder[gapminder$year == 2002 | gapminder$year == 2007, ]
+gapminder[gapminder$year %in% c(2002, 2007)]
+```
+
+There are two ways to produce a filtered smaller data.frame from a larger one. Producing data.frame "gapminder_small" containing rows 1-9 and 19-23 is used as an example.
+
+You can produce two small data.frames and bind them:
+
+```{r}
+gapminder1to9 <- gapminder[1:9,]
+gapminder19to23 <- gapminder[19:23,]
+gapminder_small <- rbind(gapminder1to9, gapminder19to23)
+```
+
+You can also do it in one step:
+
+```{r}
+gapminder_small <- gapminder[c(1:9, 19:23),]
+```
+
+## Control Flow
+
+If statements in R accept singular inputs, so if you want to filter by entries from a specific year, you need to use the any() function:
+
+```{r}
+if (any(gapminder$year == 2002)) {
+  print("Record(s) for the year 2012 found.")
+  gapminder[gapminder$year == 2002,]
+} else {
+  print("No records for 2012 found.")
+}
+```
+
+You can also use all() to test that all are true.
+
+A for loop is conducted as following. As an example, the gapminder dataset is being looped over by continent and printing whether mean life expectancy is smaller or larger than 50 years.
+
+```{r}
+# The list of continents is generated.
+continents <- unique(gapminder$continent)
+
+# A for loop is established looping over the continents list.
+for (i in continents) {
+  # A temporary variable is used to store the life expectancy of each value from each continent.
+  tmp <- gapminder[gapminder$continent == i, "lifeExp"]
+  # The mean of the life expectancy is taken, ignoring missing data.
+  meanExp = mean(tmp, na.rm = TRUE)
+  # The if statement is made.
+  if (meanExp < 50) {
+    cat("Average life expectancy in", i, "is less than 50.\n")
+  } else {
+    cat("Average life expectancy in", i, "is greater than or equal to 50.\n")
+  }
+  # The placeholders are removed.
+  rm(meanExp, tmp)
+}
+# The list of continents and iterator are removed.
+rm(continents, i)
+```
+
+To show how this can be modified and condensed, this is how it can be done for each country, and with different categories for smaller than 50, between 50 and 70, and greater than 70.
+
+```{r}
+countries <- unique(gapminder$country)
+
+for (i in countries) {
+  tmp <- mean(gapminder[gapminder$country == i, "lifeExp"])
+  if (tmp < 50) {
+    cat("Average life expectancy in", i, "is less than 50.\n")
+  } else if (50 <= tmp && tmp < 70) {
+    cat("Average life expectancy in", i, "is between 50 and 70.\n")
+  } else {
+    cat("Average life expectancy in", i, "is greater than or equal to 70.\n")
+  }
+  rm(tmp)
+}
+rm(countries, i)
+```
+
+As a final, more complex, demonstration, the below code tests whether the country starts with a B and graphs life expectancy against time if mean life expectancy is under 50 years.
+
+```{r}
+countries <- unique(gapminder$country)
+
+bCountries = grep("^B", unique(gapminder$country), value=TRUE)
+
+for (i in bCountries) {
+  tmp <- mean(gapminder[gapminder$country == i, "lifeExp"])
+  if (tmp < 50) {
+    cat("Average life expectancy in", i, "is less than 50.\n")
+    with(subset(gapminder, country == i),
+         plot(year, lifeExp,
+              type = "o",
+              main = paste("Life expectancy in", i, "over time"),
+              ylab = "Life expectancy",
+              xlab = "Year"
+              )
+         )
+  }
+  rm(tmp)
+}
+
+rm(countries, bCountries)
+```
+
+## Graphics
+
+Ggplot2 is a common library for graphics. It is installed with:
+
+```{r}
+library("ggplot2")
+```
+
+It is also installed with the tidyverse.
+
+To produce a plot, the required arguments are data, mapping (aesthetics), and the way the data should be shown. gdpPercap against year (over time) of continents differentiated by colour with points is shown with:
+
+```{r}
+ggplot(data = gapminder, mapping = aes(x = year, y = lifeExp, color = continent)) +
+  geom_point()
+```
+
+To visualise change over time, you can use geom_line(). The grouping is set to country to show individual data.
+
+```{r}
+ggplot(data = gapminder, mapping = aes(x = year, y = lifeExp, group = country, color = continent)) +
+  geom_line()
+```
+
+The geometrical representations can be combined:
+
+```{r}
+ggplot(data = gapminder, mapping = aes(x = year, y = lifeExp, group = country, color = continent)) +
+  geom_line() + geom_point()
+```
+
+To clearly display some data, a logarithmic scale with transparency of the points can be helpful. A line of best fit can be applied as follows:
+
+```{r}
+ggplot(data = gapminder, mapping = aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(alpha = 0.5) + scale_x_log10() + geom_smooth(method="lm")
+```
+
+## Vectorisation
+
+A vectorised function is one that can operate over full vectors (rows and columns). Many R functions are vectorised, including arithmetic operators. As an example, this is how to add a column of population per million to gapminder.
