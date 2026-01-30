@@ -149,17 +149,7 @@ gapminder[gapminder$year == 2002 | gapminder$year == 2007, ]
 gapminder[gapminder$year %in% c(2002, 2007)]
 ```
 
-There are two ways to produce a filtered smaller data.frame from a larger one. Producing data.frame "gapminder_small" containing rows 1-9 and 19-23 is used as an example.
-
-You can produce two small data.frames and bind them:
-
-```{r}
-gapminder1to9 <- gapminder[1:9,]
-gapminder19to23 <- gapminder[19:23,]
-gapminder_small <- rbind(gapminder1to9, gapminder19to23)
-```
-
-You can also do it in one step:
+There are ways to produce a filtered smaller data.frame from a larger one. Producing data.frame "gapminder_small" containing rows 1-9 and 19-23 is used as an example.
 
 ```{r}
 gapminder_small <- gapminder[c(1:9, 19:23),]
@@ -291,3 +281,99 @@ ggplot(data = gapminder, mapping = aes(x = gdpPercap, y = lifeExp)) +
 ## Vectorisation
 
 A vectorised function is one that can operate over full vectors (rows and columns). Many R functions are vectorised, including arithmetic operators. As an example, this is how to add a column of population per million to gapminder.
+
+```{r}
+pop_millions <- gapminder$pop / 1000000
+gapminder_mil <- cbind(gapminder, pop_millions)
+```
+
+Example graphics production from this is population in millions by year:
+
+```{r}
+ggplot(data=gapminder_mil, mapping = aes(x = year, y = pop_millions, group=country)) +
+  geom_point() + geom_line()
+```
+
+And another particularly for China, India, and Indonesia.
+
+```{r}
+cii = c("China", "India", "Indonesia")
+
+ggplot(data=filter(gapminder_mil, country %in% cii), mapping = aes(x = year, y = pop_millions, group=country)) +
+  geom_point() + geom_line()
+```
+
+Using this matrix as an example:
+
+```{r}
+m <- matrix(1:12, nrow=3, ncol=4)
+m
+```
+
+The following are matrix operations that can be performed, They loop until the matrix is covered:
+
+```{r}
+m ^ -1 # Reciprocal
+
+m * c(1, 0, -1) # Multiplication matching nrow
+
+m > c(0, 20) # Alternating logical (greater than 0 then 20 repeating)
+
+m * c(1, 0, -1, -2) # Multiplication not matching nrow
+```
+
+## Functions
+
+To write a function to convert kelvin to celsius (subtraction of 273.15), write code as follows:
+
+```{r}
+kelvin_to_celsius <- function(kelvin) {
+  return(kelvin - 273.15)
+}
+```
+
+Given that fahrenheit to kelvin is achieved using:
+
+```{r}
+fahr_to_kelvin <- function(fahr) {
+  return (((fahr - 32) * (5/9)) + 273.15)
+}
+```
+
+These can be chained to form a conversion of fahrenheit to celsius, in multiple ways.
+
+```{r}
+
+# They can be called from each other. E.g. 53 Fahrenheit is...
+
+cat("53F is", kelvin_to_celsius(fahr_to_kelvin(53)), "C\n")
+
+# A new function can be written.
+
+fahr_to_celsius <- function(fahr) {
+  return((fahr - 32) * (5/9))
+}
+
+# Or the functions can be called within another function.
+
+fahr_to_celsius <- function(fahr) {
+  return(kelvin_to_celsius(fahr_to_kelvin(fahr)))
+}
+```
+
+Defensive programming is a key consideration when writing functions. It stops malicious users submitting purposely incorrect data, and also aids in debugging by indicating where a function goes wrong.
+
+As an example:
+
+```{r}
+fahr_to_kelvin_stop <- function(fahr) {
+  stopifnot(is.numeric(fahr))
+  return (((fahr - 32) * (5/9)) + 273.15)
+}
+```
+
+If run with an input that is coerced into a number, the function throws an error and indicates what was triggered.
+
+```{r}
+fahr_to_kelvin_stop(as.factor(20))
+```
