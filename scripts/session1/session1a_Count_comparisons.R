@@ -1,5 +1,5 @@
 ##### Read input file #####
-df <- read.csv("DESeq2_results_all.csv", header = T, row.names = 1, check.names = F)
+df <- read.csv(here("dataSources", "session1", "DESeq2_results_all.csv"), header = T, row.names = 1, check.names = F)
 dim(df)
 View(df)
 
@@ -10,7 +10,7 @@ IndVsCon <- as.data.frame(df[,7:9])
 
 ##### Count and subset of Differential Expressed Genes (DEGs) #####
 ##### Set cutoff to filter #####
-pCutoff <- 0.05
+pCutoff <- 0.01
 
 ### Number of significant DEG IDs by P-value and P-adjusted (Q) cutoffs ###
 cat(paste0('significant p-values = ', sum(AluVsCon$pvalue <= pCutoff, na.rm = T), '\n'))
